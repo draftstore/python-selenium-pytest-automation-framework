@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# Selenium Automation Generated Files
+reports/*
+screenshots/*
+logs/*
+
+!reports/.gitkeep
+!screenshots/.gitkeep
+!logs/.gitkeep
