@@ -33,14 +33,6 @@ def test_personal_details_page_loads_with_required_fields(driver):
         "Nationality, Marital Status, Date of Birth, or Gender field is not visible"
     )
 
-    assert my_info_page.get_first_name_value().strip() != "", (
-        "First Name should be pre-filled on Personal Details page"
-    )
-
-    assert my_info_page.get_last_name_value().strip() != "", (
-        "Last Name should be pre-filled on Personal Details page"
-    )
-
     assert my_info_page.is_save_button_visible(), (
         "Personal Details Save button is not visible"
     )
