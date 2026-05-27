@@ -2,5 +2,7 @@
   "base_url": "https://opensource-demo.orangehrmlive.com/",
   "browser": "chrome",
   "timeout": 10,
-  "headless": false
+  "headless": false,
+  "slow_mode": 5,
+  "final_pause": 5
 }

@@ -30,3 +30,11 @@ class ConfigReader:
     @staticmethod
     def is_headless():
         return ConfigReader.get_config()["headless"]
+    
+    @staticmethod
+    def get_slow_mode():
+        return ConfigReader.get_config().get("slow_mode", 0)
+    
+    @staticmethod
+    def get_final_pause():
+        return ConfigReader.get_config().get("final_pause", 0)

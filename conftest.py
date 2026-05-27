@@ -1,4 +1,5 @@
 import pytest
+import time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from utils.config_reader import ConfigReader
@@ -27,7 +28,11 @@ def driver():
         raise ValueError(f"Unsupported browser: {browser}")
 
     driver.implicitly_wait(0)
-
+    
     yield driver
-
-    driver.quit()
+    
+    final_pause = ConfigReader.get_final_pause()
+    
+    if final_pause > 0:
+        time.sleep(final_pause)
+        driver.quit()

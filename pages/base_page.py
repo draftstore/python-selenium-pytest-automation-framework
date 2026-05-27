@@ -1,5 +1,5 @@
 from typing import Tuple, List
-
+import time
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
@@ -24,6 +24,7 @@ class BasePage:
     def __init__(self, driver: WebDriver):
         self.driver = driver
         self.wait = WebDriverWait(driver, ConfigReader.get_timeout())
+        self.slow_mode = ConfigReader.get_slow_mode()
 
     # -------------------------
     # Browser Actions
@@ -92,10 +93,12 @@ class BasePage:
 
     def click(self, locator: Locator) -> None:
         element = self.wait_for_clickable(locator)
+        self.pause_for_demo()
         element.click()
 
     def enter_text(self, locator: Locator, text: str) -> None:
         element = self.wait_for_visible(locator)
+        self.pause_for_demo()
         element.clear()
         element.send_keys(text)
 
@@ -322,3 +325,10 @@ class BasePage:
 
     def take_screenshot(self, file_path: str) -> None:
         self.driver.save_screenshot(file_path)
+
+    # -------------------------
+    # Pause for Demo
+    # -------------------------
+    def pause_for_demo(self):
+        if self.slow_mode > 0:
+            time.sleep(self.slow_mode)
