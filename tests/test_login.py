@@ -9,6 +9,6 @@ def test_user_can_login_with_valid_credentials(driver):
     login_page.load()
     login_page.login("Admin", "admin123")
 
-    assert dashboard_page.is_dashboard_displayed(), (
+    assert dashboard_page.wait_until_dashboard_is_loaded(), (
         "Dashboard page was not displayed after valid login"
     )

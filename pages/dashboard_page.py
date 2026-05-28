@@ -12,6 +12,10 @@ class DashboardPage(BasePage):
     USER_DROPDOWN = (By.CLASS_NAME, "oxd-userdropdown-name")
     LOGOUT_LINK = (By.XPATH, "//a[normalize-space()='Logout']")
 
+    def wait_until_dashboard_is_loaded(self):
+        self.wait_for_url_contains("dashboard")
+        return self.is_dashboard_displayed()
+
     def is_dashboard_displayed(self):
         return self.is_element_visible(self.DASHBOARD_HEADER)
 

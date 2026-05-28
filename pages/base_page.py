@@ -90,16 +90,19 @@ class BasePage:
     # -------------------------
     # Basic Element Actions
     # -------------------------
-
     def click(self, locator: Locator) -> None:
         element = self.wait_for_clickable(locator)
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
         self.pause_for_demo()
         element.click()
-
+        
     def enter_text(self, locator: Locator, text: str) -> None:
         element = self.wait_for_visible(locator)
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
         self.pause_for_demo()
-        element.clear()
+        element.click()
+        element.send_keys(Keys.CONTROL, "a")
+        element.send_keys(Keys.BACKSPACE)
         element.send_keys(text)
 
     def clear_text(self, locator: Locator) -> None:
@@ -185,10 +188,10 @@ class BasePage:
     # -------------------------
     # JavaScript Actions
     # -------------------------
-
+    
     def scroll_to_element(self, locator: Locator) -> None:
         element = self.wait_for_visible(locator)
-        self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
 
     def scroll_to_top(self) -> None:
         self.driver.execute_script("window.scrollTo(0, 0);")

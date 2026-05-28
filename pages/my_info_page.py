@@ -122,3 +122,22 @@ class MyInfoPage(BasePage):
 
     def is_save_button_visible(self):
         return self.is_element_visible(self.PERSONAL_DETAILS_SAVE_BUTTON)
+    
+    def get_drivers_license_value(self):
+        return self.get_attribute(self.DRIVERS_LICENSE_INPUT, "value")
+
+    def update_other_id(self, other_id: str):
+        self.enter_text(self.OTHER_ID_INPUT, other_id)
+
+    def update_drivers_license_number(self, license_number: str):
+        self.enter_text(self.DRIVERS_LICENSE_INPUT, license_number)
+
+    def save_personal_details(self):
+        self.click(self.PERSONAL_DETAILS_SAVE_BUTTON)
+
+    def is_success_message_displayed(self):
+        success_message = (
+            By.XPATH,
+            "//p[normalize-space()='Successfully Updated']"
+        )
+        return self.is_element_visible(success_message)
