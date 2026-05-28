@@ -141,3 +141,15 @@ class MyInfoPage(BasePage):
             "//p[normalize-space()='Successfully Updated']"
         )
         return self.is_element_visible(success_message)
+    
+    def get_nationality_value(self):
+        return self.get_custom_dropdown_selected_text(self.NATIONALITY_DROPDOWN)
+    
+    def get_marital_status_value(self):
+        return self.get_custom_dropdown_selected_text(self.MARITAL_STATUS_DROPDOWN)
+    
+    def update_nationality(self, nationality: str):
+        self.select_custom_dropdown_option(self.NATIONALITY_DROPDOWN, nationality)
+        
+    def update_marital_status(self, marital_status: str):
+        self.select_custom_dropdown_option(self.MARITAL_STATUS_DROPDOWN, marital_status)

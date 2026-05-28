@@ -16,6 +16,7 @@ class LoginPage(BasePage):
 
     def load(self):
         self.open_url(ConfigReader.get_base_url())
+        self.wait_until_login_page_is_loaded()
 
     def login(self, username: str, password: str):
         self.enter_text(self.USERNAME_INPUT, username)
@@ -27,3 +28,8 @@ class LoginPage(BasePage):
 
     def is_login_page_displayed(self):
         return self.is_element_visible(self.LOGIN_BUTTON)
+    
+    def wait_until_login_page_is_loaded(self):
+        self.wait_for_visible(self.USERNAME_INPUT)
+        self.wait_for_visible(self.PASSWORD_INPUT)
+        self.wait_for_clickable(self.LOGIN_BUTTON)

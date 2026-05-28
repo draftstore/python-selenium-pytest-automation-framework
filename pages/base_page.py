@@ -335,3 +335,11 @@ class BasePage:
     def pause_for_demo(self):
         if self.slow_mode > 0:
             time.sleep(self.slow_mode)
+            
+    def select_custom_dropdown_option(self, dropdown_locator: Locator, option_text: str) -> None:
+        self.click(dropdown_locator)
+        option_locator = (By.XPATH,f"//div[@role='option']//span[normalize-space()='{option_text}']")
+        self.click(option_locator)
+
+    def get_custom_dropdown_selected_text(self, dropdown_locator: Locator) -> str:
+        return self.get_text(dropdown_locator).strip()
