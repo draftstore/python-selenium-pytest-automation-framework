@@ -69,6 +69,15 @@ class MyInfoPage(BasePage):
     MALE_RADIO_LABEL = (By.XPATH, "//label[normalize-space()='Male']")
     FEMALE_RADIO_LABEL = (By.XPATH, "//label[normalize-space()='Female']")
 
+    MALE_RADIO_INPUT = (
+    By.XPATH,
+    "//label[normalize-space()='Male']//input[@type='radio']")
+    
+    FEMALE_RADIO_INPUT = (
+    By.XPATH,
+    "//label[normalize-space()='Female']//input[@type='radio']"
+    )
+
     # Save Button
     PERSONAL_DETAILS_SAVE_BUTTON = (
         By.XPATH,
@@ -153,3 +162,19 @@ class MyInfoPage(BasePage):
         
     def update_marital_status(self, marital_status: str):
         self.select_custom_dropdown_option(self.MARITAL_STATUS_DROPDOWN, marital_status)
+
+    def select_gender(self, gender: str):
+        if gender.lower() == "male":
+            self.click(self.MALE_RADIO_LABEL)
+        elif gender.lower() == "female":
+            self.click(self.FEMALE_RADIO_LABEL)
+        else:
+            raise ValueError(f"Unsupported gender: {gender}")
+    
+    def get_selected_gender(self):
+        if self.is_element_selected(self.MALE_RADIO_INPUT):
+            return "Male"
+        
+        if self.is_element_selected(self.FEMALE_RADIO_INPUT):
+            return "Female"
+        return ""
