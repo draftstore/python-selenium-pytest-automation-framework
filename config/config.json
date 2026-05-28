@@ -4,5 +4,6 @@
   "timeout": 10,
   "headless": false,
   "slow_mode": 5,
-  "final_pause": 10
+  "final_pause": 10,
+  "visual_validation_pause": 15
 }

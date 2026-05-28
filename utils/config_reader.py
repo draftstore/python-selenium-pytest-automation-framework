@@ -38,3 +38,7 @@ class ConfigReader:
     @staticmethod
     def get_final_pause():
         return ConfigReader.get_config().get("final_pause", 0)
+    
+    @staticmethod
+    def get_visual_validation_pause():
+        return ConfigReader.get_config().get("visual_validation_pause", 0)

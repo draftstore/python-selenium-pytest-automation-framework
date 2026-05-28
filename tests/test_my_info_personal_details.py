@@ -10,12 +10,13 @@ def test_personal_details_page_loads_with_required_fields(driver):
 
     login_page.load()
     login_page.login("Admin", "admin123")
-
-    assert dashboard_page.is_dashboard_displayed(), (
-        "Dashboard page was not displayed after login"
+    
+    assert dashboard_page.wait_until_dashboard_is_loaded(), (
+    "Dashboard page was not displayed after login"
     )
 
     my_info_page.open_my_info_page()
+    my_info_page.wait_until_personal_details_page_is_loaded()
 
     assert my_info_page.is_personal_details_page_displayed(), (
         "Personal Details page was not displayed"

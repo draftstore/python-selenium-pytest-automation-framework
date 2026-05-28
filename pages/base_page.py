@@ -236,6 +236,39 @@ class BasePage:
     def get_all_dropdown_options(self, locator: Locator) -> List[str]:
         element = self.wait_for_visible(locator)
         return [option.text for option in Select(element).options]
+    
+
+    # -------------------------
+    # Dynamic Dropdown Actions (for custom dropdowns that are not <select> elements)
+    # -------------------------
+
+    def get_xpath_text_literal(self, text: str) -> str:
+        if "'" not in text:
+            return f"'{text}'"
+        if '"' not in text:
+            return f'"{text}"'
+        return "concat(" + ", \"'\", ".join(f"'{part}'" for part in text.split("'")) + ")"
+    
+    def select_custom_dropdown_option(self, dropdown_locator: Locator, option_text: str) -> None:
+        self.click(dropdown_locator)
+        option_locator = (By.XPATH,
+        f"//div[@role='option']//span[normalize-space()={self.get_xpath_text_literal(option_text)}]")
+        self.click(option_locator)
+    
+    def get_custom_dropdown_selected_text(self, dropdown_locator: Locator) -> str:
+        return self.get_text(dropdown_locator).strip()
+    
+    def get_custom_dropdown_options(self, dropdown_locator: Locator) -> list[str]:
+        self.click(dropdown_locator)
+        option_locator = (By.XPATH, "//div[@role='option']//span")
+        options = self.wait.until(EC.visibility_of_all_elements_located(option_locator))
+        option_texts = [option.text.strip() for option in options if option.text.strip()]
+        self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
+        return option_texts
+    
+    def is_custom_dropdown_option_available(self, dropdown_locator: Locator, option_text: str) -> bool:
+        options = self.get_custom_dropdown_options(dropdown_locator)
+        return option_text in options
 
     # -------------------------
     # Checkbox / Radio Button Actions
@@ -336,10 +369,31 @@ class BasePage:
         if self.slow_mode > 0:
             time.sleep(self.slow_mode)
             
+    def get_xpath_text_literal(self, text: str) -> str:
+        if "'" not in text:
+            return f"'{text}'"
+        if '"' not in text:
+            return f'"{text}"'
+        return "concat(" + ", \"'\", ".join(f"'{part}'" for part in text.split("'")) + ")"
+    
     def select_custom_dropdown_option(self, dropdown_locator: Locator, option_text: str) -> None:
         self.click(dropdown_locator)
-        option_locator = (By.XPATH,f"//div[@role='option']//span[normalize-space()='{option_text}']")
+        option_locator = (By.XPATH,
+        f"//div[@role='option']//span[normalize-space()={self.get_xpath_text_literal(option_text)}]"
+        )
         self.click(option_locator)
-
-    def get_custom_dropdown_selected_text(self, dropdown_locator: Locator) -> str:
-        return self.get_text(dropdown_locator).strip()
+        
+        def get_custom_dropdown_selected_text(self, dropdown_locator: Locator) -> str:
+            return self.get_text(dropdown_locator).strip()
+        
+        def get_custom_dropdown_options(self, dropdown_locator: Locator) -> list[str]:
+            self.click(dropdown_locator)
+            option_locator = (By.XPATH, "//div[@role='option']//span")
+            options = self.wait.until(EC.visibility_of_all_elements_located(option_locator))
+            option_texts = [option.text.strip() for option in options if option.text.strip()]
+            self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
+            return option_texts
+        
+        def is_custom_dropdown_option_available(self, dropdown_locator: Locator, option_text: str) -> bool:
+            options = self.get_custom_dropdown_options(dropdown_locator)
+            return option_text in options

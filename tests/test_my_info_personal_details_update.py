@@ -27,6 +27,7 @@ def test_user_can_update_and_restore_optional_personal_details(driver):
 
     with allure.step("Open My Info page"):
         my_info_page.open_my_info_page()
+        my_info_page.wait_until_personal_details_page_is_loaded()
 
     with allure.step("Verify Personal Details page is displayed"):
         assert my_info_page.is_personal_details_page_displayed(), (
