@@ -22,6 +22,27 @@ class MyInfoPage(BasePage):
     MIDDLE_NAME_INPUT = (By.NAME, "middleName")
     LAST_NAME_INPUT = (By.NAME, "lastName")
 
+    FIRST_NAME_ERROR_MESSAGE = (
+        By.XPATH,
+        "//input[@name='firstName']"
+        "/ancestor::div[contains(@class,'oxd-input-field-bottom-space')]"
+        "//span[contains(@class,'oxd-input-field-error-message')]",
+    )
+
+    MIDDLE_NAME_ERROR_MESSAGE = (
+        By.XPATH,
+        "//input[@name='middleName']"
+        "/ancestor::div[contains(@class,'oxd-input-field-bottom-space')]"
+        "//span[contains(@class,'oxd-input-field-error-message')]",
+    )
+
+    LAST_NAME_ERROR_MESSAGE = (
+        By.XPATH,
+        "//input[@name='lastName']"
+        "/ancestor::div[contains(@class,'oxd-input-field-bottom-space')]"
+        "//span[contains(@class,'oxd-input-field-error-message')]",
+    )
+
     # ID Section
     EMPLOYEE_ID_INPUT = (
         By.XPATH,
@@ -464,3 +485,41 @@ class MyInfoPage(BasePage):
             "//span[contains(@class,'oxd-input-field-error-message')]",
         )
         return self.is_element_visible(dob_error_message)
+
+    def update_first_name(self, first_name: str):
+        self.enter_text(self.FIRST_NAME_INPUT, first_name)
+
+    def update_middle_name(self, middle_name: str):
+        self.enter_text(self.MIDDLE_NAME_INPUT, middle_name)
+
+    def update_last_name(self, last_name: str):
+        self.enter_text(self.LAST_NAME_INPUT, last_name)
+
+    def restore_name_fields(
+        self,
+        first_name: str,
+        middle_name: str,
+        last_name: str,
+    ):
+        self.update_first_name(first_name)
+        self.update_middle_name(middle_name)
+        self.update_last_name(last_name)
+        self.save_personal_details()
+
+    def get_first_name_error_message(self):
+        return self.get_text(self.FIRST_NAME_ERROR_MESSAGE)
+
+    def get_middle_name_error_message(self):
+        return self.get_text(self.MIDDLE_NAME_ERROR_MESSAGE)
+
+    def get_last_name_error_message(self):
+        return self.get_text(self.LAST_NAME_ERROR_MESSAGE)
+
+    def is_first_name_error_displayed(self):
+        return len(self.driver.find_elements(*self.FIRST_NAME_ERROR_MESSAGE)) > 0
+
+    def is_middle_name_error_displayed(self):
+        return len(self.driver.find_elements(*self.MIDDLE_NAME_ERROR_MESSAGE)) > 0
+
+    def is_last_name_error_displayed(self):
+        return len(self.driver.find_elements(*self.LAST_NAME_ERROR_MESSAGE)) > 0
