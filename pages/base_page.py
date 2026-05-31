@@ -1,6 +1,12 @@
 from typing import Tuple, List
 import time
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+import os
+
+from selenium.common.exceptions import (
+    TimeoutException,
+    StaleElementReferenceException,
+    NoSuchElementException,
+)
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
@@ -12,6 +18,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from utils.config_reader import ConfigReader
 
 Locator = Tuple[By, str]
+
 
 class BasePage:
     """
@@ -90,20 +97,73 @@ class BasePage:
     # -------------------------
     # Basic Element Actions
     # -------------------------
+
     def click(self, locator: Locator) -> None:
         element = self.wait_for_clickable(locator)
-        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", element
+        )
+        self.show_current_test_banner()
         self.pause_for_demo()
         element.click()
-        
+
     def enter_text(self, locator: Locator, text: str) -> None:
         element = self.wait_for_visible(locator)
-        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", element
+        )
+        self.show_current_test_banner()
         self.pause_for_demo()
         element.click()
         element.send_keys(Keys.CONTROL, "a")
         element.send_keys(Keys.BACKSPACE)
         element.send_keys(text)
+
+    def replace_input_value_strict(self, locator: Locator, value: str) -> None:
+        """
+        Replaces date/input value using native JavaScript setter.
+
+        This is designed for controlled React/Vue-style inputs such as
+        OrangeHRM date fields where normal keyboard input may not reliably
+        replace the value.
+        """
+
+        element = self.wait_for_visible(locator)
+
+        script = """
+            const element = arguments[0];
+            const value = arguments[1];
+
+            element.scrollIntoView({block: 'center'});
+            element.focus();
+
+            const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                window.HTMLInputElement.prototype,
+                'value'
+            ).set;
+
+            nativeInputValueSetter.call(element, '');
+
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+
+            nativeInputValueSetter.call(element, value);
+
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+            element.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }));
+            element.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+
+            return element.value;
+        """
+
+        actual_value = self.driver.execute_script(script, element, value) or ""
+
+        if actual_value != value:
+            raise AssertionError(
+                f"Input value was not applied correctly. "
+                f"Expected: '{value}', Actual: '{actual_value}'"
+            )
 
     def clear_text(self, locator: Locator) -> None:
         element = self.wait_for_visible(locator)
@@ -188,10 +248,12 @@ class BasePage:
     # -------------------------
     # JavaScript Actions
     # -------------------------
-    
+
     def scroll_to_element(self, locator: Locator) -> None:
         element = self.wait_for_visible(locator)
-        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", element
+        )
 
     def scroll_to_top(self) -> None:
         self.driver.execute_script("window.scrollTo(0, 0);")
@@ -236,37 +298,54 @@ class BasePage:
     def get_all_dropdown_options(self, locator: Locator) -> List[str]:
         element = self.wait_for_visible(locator)
         return [option.text for option in Select(element).options]
-    
 
     # -------------------------
-    # Dynamic Dropdown Actions (for custom dropdowns that are not <select> elements)
+    # Dynamic Dropdown Actions
     # -------------------------
 
     def get_xpath_text_literal(self, text: str) -> str:
         if "'" not in text:
             return f"'{text}'"
+
         if '"' not in text:
             return f'"{text}"'
-        return "concat(" + ", \"'\", ".join(f"'{part}'" for part in text.split("'")) + ")"
-    
-    def select_custom_dropdown_option(self, dropdown_locator: Locator, option_text: str) -> None:
+
+        return (
+            "concat(" + ', "\'", '.join(f"'{part}'" for part in text.split("'")) + ")"
+        )
+
+    def select_custom_dropdown_option(
+        self, dropdown_locator: Locator, option_text: str
+    ) -> None:
         self.click(dropdown_locator)
-        option_locator = (By.XPATH,
-        f"//div[@role='option']//span[normalize-space()={self.get_xpath_text_literal(option_text)}]")
+
+        option_locator = (
+            By.XPATH,
+            f"//div[@role='option']//span[normalize-space()={self.get_xpath_text_literal(option_text)}]",
+        )
+
         self.click(option_locator)
-    
+
     def get_custom_dropdown_selected_text(self, dropdown_locator: Locator) -> str:
         return self.get_text(dropdown_locator).strip()
-    
+
     def get_custom_dropdown_options(self, dropdown_locator: Locator) -> list[str]:
         self.click(dropdown_locator)
+
         option_locator = (By.XPATH, "//div[@role='option']//span")
         options = self.wait.until(EC.visibility_of_all_elements_located(option_locator))
-        option_texts = [option.text.strip() for option in options if option.text.strip()]
+
+        option_texts = [
+            option.text.strip() for option in options if option.text.strip()
+        ]
+
         self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
+
         return option_texts
-    
-    def is_custom_dropdown_option_available(self, dropdown_locator: Locator, option_text: str) -> bool:
+
+    def is_custom_dropdown_option_available(
+        self, dropdown_locator: Locator, option_text: str
+    ) -> bool:
         options = self.get_custom_dropdown_options(dropdown_locator)
         return option_text in options
 
@@ -365,35 +444,61 @@ class BasePage:
     # -------------------------
     # Pause for Demo
     # -------------------------
-    def pause_for_demo(self):
+
+    def pause_for_demo(self) -> None:
         if self.slow_mode > 0:
             time.sleep(self.slow_mode)
-            
-    def get_xpath_text_literal(self, text: str) -> str:
-        if "'" not in text:
-            return f"'{text}'"
-        if '"' not in text:
-            return f'"{text}"'
-        return "concat(" + ", \"'\", ".join(f"'{part}'" for part in text.split("'")) + ")"
-    
-    def select_custom_dropdown_option(self, dropdown_locator: Locator, option_text: str) -> None:
-        self.click(dropdown_locator)
-        option_locator = (By.XPATH,
-        f"//div[@role='option']//span[normalize-space()={self.get_xpath_text_literal(option_text)}]"
-        )
-        self.click(option_locator)
-        
-        def get_custom_dropdown_selected_text(self, dropdown_locator: Locator) -> str:
-            return self.get_text(dropdown_locator).strip()
-        
-        def get_custom_dropdown_options(self, dropdown_locator: Locator) -> list[str]:
-            self.click(dropdown_locator)
-            option_locator = (By.XPATH, "//div[@role='option']//span")
-            options = self.wait.until(EC.visibility_of_all_elements_located(option_locator))
-            option_texts = [option.text.strip() for option in options if option.text.strip()]
-            self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
-            return option_texts
-        
-        def is_custom_dropdown_option_available(self, dropdown_locator: Locator, option_text: str) -> bool:
-            options = self.get_custom_dropdown_options(dropdown_locator)
-            return option_text in options
+
+    def get_current_test_name(self) -> str:
+        current_test = os.environ.get("PYTEST_CURRENT_TEST", "")
+
+        if not current_test:
+            return "Running Automation Test"
+
+        test_node = current_test.split(" ")[0]
+        test_name = test_node.split("::")[-1]
+
+        return test_name.replace("_", " ").title()
+
+    def show_current_test_banner(self) -> None:
+        """
+        Shows the currently running test name as a browser overlay.
+        This is useful for demo/debug mode.
+        """
+
+        test_name = self.get_current_test_name()
+
+        script = """
+            if (!document.body) {
+                return;
+            }
+
+            const existingBanner = document.getElementById('automation-test-banner');
+            if (existingBanner) {
+                existingBanner.remove();
+            }
+
+            const banner = document.createElement('div');
+            banner.id = 'automation-test-banner';
+            banner.innerText = 'Running Test: ' + arguments[0];
+
+            banner.style.position = 'fixed';
+            banner.style.top = '15px';
+            banner.style.left = '50%';
+            banner.style.transform = 'translateX(-50%)';
+            banner.style.zIndex = '999999';
+            banner.style.background = '#111827';
+            banner.style.color = '#ffffff';
+            banner.style.padding = '14px 28px';
+            banner.style.borderRadius = '10px';
+            banner.style.fontSize = '22px';
+            banner.style.fontWeight = '700';
+            banner.style.fontFamily = 'Arial, sans-serif';
+            banner.style.boxShadow = '0 4px 12px rgba(0,0,0,0.30)';
+            banner.style.pointerEvents = 'none';
+            banner.style.border = '2px solid #22c55e';
+
+            document.body.appendChild(banner);
+        """
+
+        self.driver.execute_script(script, test_name)

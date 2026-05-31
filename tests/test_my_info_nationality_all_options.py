@@ -23,9 +23,9 @@ def test_user_can_select_all_available_nationality_options(driver):
         login_page.login("Admin", "admin123")
 
     with allure.step("Verify dashboard is displayed after login"):
-        assert dashboard_page.wait_until_dashboard_is_loaded(), (
-            "Dashboard page was not displayed after login"
-        )
+        assert (
+            dashboard_page.wait_until_dashboard_is_loaded()
+        ), "Dashboard page was not displayed after login"
 
     with allure.step("Open My Info page"):
         my_info_page.open_my_info_page()
@@ -37,31 +37,30 @@ def test_user_can_select_all_available_nationality_options(driver):
         allure.attach(
             f"Original Nationality: {original_nationality}",
             name="Original Nationality",
-            attachment_type=allure.attachment_type.TEXT
+            attachment_type=allure.attachment_type.TEXT,
         )
 
     with allure.step("Get available nationality options dynamically"):
         available_options = my_info_page.get_nationality_options()
 
         testable_options = [
-            option for option in available_options
+            option
+            for option in available_options
             if option and option != "-- Select --"
         ]
 
         allure.attach(
             "\n".join(testable_options),
             name="Available Nationality Options",
-            attachment_type=allure.attachment_type.TEXT
+            attachment_type=allure.attachment_type.TEXT,
         )
 
-        assert testable_options, (
-            "No selectable nationality options were found"
-        )
+        assert testable_options, "No selectable nationality options were found"
 
     try:
         for nationality in testable_options:
             with allure.step(f"Select nationality option: {nationality}"):
-                my_info_page.update_nationality(nationality)
+                my_info_page.update_nationality_for_all_options_test(nationality)
 
                 actual_selected_value = my_info_page.get_nationality_value()
 
@@ -73,15 +72,15 @@ def test_user_can_select_all_available_nationality_options(driver):
             with allure.step(f"Save nationality option: {nationality}"):
                 my_info_page.save_personal_details()
 
-                assert my_info_page.is_success_message_displayed(), (
-                    f"Success message was not displayed after saving nationality: {nationality}"
-                )
+                assert (
+                    my_info_page.is_success_message_displayed()
+                ), f"Success message was not displayed after saving nationality: {nationality}"
 
                 allure.attach(
                     f"Selected Nationality: {nationality}\n"
                     f"Displayed Value After Selection: {actual_selected_value}",
                     name=f"Nationality Evidence - {nationality}",
-                    attachment_type=allure.attachment_type.TEXT
+                    attachment_type=allure.attachment_type.TEXT,
                 )
 
     finally:
@@ -89,14 +88,16 @@ def test_user_can_select_all_available_nationality_options(driver):
             current_nationality = my_info_page.get_nationality_value()
 
             if current_nationality != original_nationality:
-                restored = my_info_page.restore_nationality(original_nationality)
+                restored = my_info_page.restore_nationality_for_all_options_test(
+                    original_nationality
+                )
 
                 if restored:
                     my_info_page.save_personal_details()
 
-                    assert my_info_page.is_success_message_displayed(), (
-                        "Success message was not displayed after restoring nationality"
-                    )
+                    assert (
+                        my_info_page.is_success_message_displayed()
+                    ), "Success message was not displayed after restoring nationality"
 
                     restored_nationality = my_info_page.get_nationality_value()
 
@@ -104,7 +105,7 @@ def test_user_can_select_all_available_nationality_options(driver):
                         f"Original Nationality: {original_nationality}\n"
                         f"Restored Nationality: {restored_nationality}",
                         name="Nationality Restore Evidence",
-                        attachment_type=allure.attachment_type.TEXT
+                        attachment_type=allure.attachment_type.TEXT,
                     )
 
                 else:
@@ -113,5 +114,5 @@ def test_user_can_select_all_available_nationality_options(driver):
                         f"but it was not available as a selectable dropdown option. "
                         f"Restore was skipped.",
                         name="Nationality Restore Skipped Reason",
-                        attachment_type=allure.attachment_type.TEXT
+                        attachment_type=allure.attachment_type.TEXT,
                     )
