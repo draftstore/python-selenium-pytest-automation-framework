@@ -62,6 +62,27 @@ class MyInfoPage(BasePage):
         "/ancestor::div[contains(@class,'oxd-input-group')]//input",
     )
 
+    EMPLOYEE_ID_ERROR_MESSAGE = (
+        By.XPATH,
+        "//label[normalize-space()='Employee Id']"
+        "/ancestor::div[contains(@class,'oxd-input-group')]"
+        "//span[contains(@class,'oxd-input-field-error-message')]",
+    )
+
+    OTHER_ID_ERROR_MESSAGE = (
+        By.XPATH,
+        "//label[normalize-space()='Other Id']"
+        "/ancestor::div[contains(@class,'oxd-input-group')]"
+        "//span[contains(@class,'oxd-input-field-error-message')]",
+    )
+
+    DRIVERS_LICENSE_ERROR_MESSAGE = (
+        By.XPATH,
+        '//label[normalize-space()="Driver\'s License Number"]'
+        "/ancestor::div[contains(@class,'oxd-input-group')]"
+        "//span[contains(@class,'oxd-input-field-error-message')]",
+    )
+
     LICENSE_EXPIRY_DATE_INPUT = (
         By.XPATH,
         "(//input[@placeholder='yyyy-dd-mm'])[1]",
@@ -523,3 +544,26 @@ class MyInfoPage(BasePage):
 
     def is_last_name_error_displayed(self):
         return len(self.driver.find_elements(*self.LAST_NAME_ERROR_MESSAGE)) > 0
+
+    def update_employee_id(self, employee_id: str):
+        self.enter_text(self.EMPLOYEE_ID_INPUT, employee_id)
+
+    def get_employee_id_error_message(self):
+        return self.get_text(self.EMPLOYEE_ID_ERROR_MESSAGE)
+
+    def get_other_id_error_message(self):
+        return self.get_text(self.OTHER_ID_ERROR_MESSAGE)
+
+    def get_drivers_license_error_message(self):
+        return self.get_text(self.DRIVERS_LICENSE_ERROR_MESSAGE)
+
+    def restore_id_fields(
+        self,
+        employee_id: str,
+        other_id: str,
+        drivers_license_number: str,
+    ):
+        self.update_employee_id(employee_id)
+        self.update_other_id(other_id)
+        self.update_drivers_license_number(drivers_license_number)
+        self.save_personal_details()
