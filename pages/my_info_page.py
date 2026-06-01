@@ -149,6 +149,33 @@ class MyInfoPage(BasePage):
         "/ancestor::form//button[@type='submit' and normalize-space()='Save']",
     )
 
+    # Custom Fields Section
+    BLOOD_TYPE_DROPDOWN = (
+        By.XPATH,
+        "//label[normalize-space()='Blood Type']"
+        "/ancestor::div[contains(@class,'oxd-input-group')]"
+        "//div[contains(@class,'oxd-select-text')]",
+    )
+
+    TEST_FIELD_INPUT = (
+        By.XPATH,
+        "//label[normalize-space()='Test_Field']"
+        "/ancestor::div[contains(@class,'oxd-input-group')]//input",
+    )
+
+    TEST_FIELD_ERROR_MESSAGE = (
+        By.XPATH,
+        "//label[normalize-space()='Test_Field']"
+        "/ancestor::div[contains(@class,'oxd-input-group')]"
+        "//span[contains(@class,'oxd-input-field-error-message')]",
+    )
+
+    CUSTOM_FIELDS_SAVE_BUTTON = (
+        By.XPATH,
+        "//label[normalize-space()='Blood Type']"
+        "/ancestor::form//button[@type='submit' and normalize-space()='Save']",
+    )
+
     def open_my_info_page(self):
         self.click(self.MY_INFO_MENU)
 
@@ -567,3 +594,102 @@ class MyInfoPage(BasePage):
         self.update_other_id(other_id)
         self.update_drivers_license_number(drivers_license_number)
         self.save_personal_details()
+
+    def get_blood_type_value(self):
+        return self.get_custom_dropdown_selected_text(self.BLOOD_TYPE_DROPDOWN)
+
+    def get_blood_type_options(self):
+        return self.get_custom_dropdown_options(self.BLOOD_TYPE_DROPDOWN)
+
+    def update_blood_type(self, blood_type: str):
+        """
+        Selects Blood Type option using a dedicated retry-based method.
+        This method is separate because this custom dropdown can refresh its DOM.
+        """
+
+        option_locator = (
+            By.XPATH,
+            f"//div[@role='option'][.//span[normalize-space()="
+            f"{self.get_xpath_text_literal(blood_type)}]]",
+        )
+
+        last_error = None
+
+        for _ in range(5):
+            try:
+                self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
+
+                self.click(self.BLOOD_TYPE_DROPDOWN)
+
+                option = self.wait_for_presence(option_locator)
+
+                self.driver.execute_script(
+                    "arguments[0].scrollIntoView({block: 'center'});",
+                    option,
+                )
+
+                self.driver.execute_script(
+                    """
+                    arguments[0].dispatchEvent(
+                        new MouseEvent('mousedown', { bubbles: true })
+                    );
+                    arguments[0].dispatchEvent(
+                        new MouseEvent('mouseup', { bubbles: true })
+                    );
+                    arguments[0].click();
+                    """,
+                    option,
+                )
+
+                self.wait.until(lambda _: self.get_blood_type_value() == blood_type)
+                return
+
+            except (
+                StaleElementReferenceException,
+                TimeoutException,
+                AssertionError,
+            ) as error:
+                last_error = error
+                self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
+
+        actual_value = self.get_blood_type_value()
+
+        raise AssertionError(
+            f"Could not select Blood Type after retries. "
+            f"Expected: {blood_type}, Actual: {actual_value}. "
+            f"Last error: {last_error}"
+        )
+
+    def restore_blood_type_default(self, default_blood_type: str):
+
+        if not default_blood_type:
+            raise AssertionError("Default Blood Type value was not provided")
+
+        self.update_blood_type(default_blood_type)
+
+        self.wait.until(lambda _: self.get_blood_type_value() == default_blood_type)
+
+        return default_blood_type
+
+    def get_test_field_value(self):
+        return self.get_attribute(self.TEST_FIELD_INPUT, "value") or ""
+
+    def update_test_field(self, value: str):
+        self.enter_text(self.TEST_FIELD_INPUT, value)
+
+    def clear_test_field(self):
+        """
+        Clears Test_Field strictly and verifies blank value.
+        """
+
+        self.replace_input_value_strict(self.TEST_FIELD_INPUT, "")
+        self.wait.until(lambda _: self.get_test_field_value() == "")
+
+    def get_test_field_error_message(self):
+        return self.get_text(self.TEST_FIELD_ERROR_MESSAGE)
+
+    def is_test_field_error_displayed(self):
+        return len(self.driver.find_elements(*self.TEST_FIELD_ERROR_MESSAGE)) > 0
+
+    def save_custom_fields(self):
+        self.click(self.CUSTOM_FIELDS_SAVE_BUTTON)
