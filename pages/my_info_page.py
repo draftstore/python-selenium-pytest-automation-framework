@@ -251,6 +251,17 @@ class MyInfoPage(BasePage):
         "//div[contains(@class,'oxd-table-card')]",
     )
 
+    EDIT_ATTACHMENT_FORM_TITLE = (
+        By.XPATH,
+        "//h6[normalize-space()='Edit Attachment']",
+    )
+
+    EDIT_ATTACHMENT_SAVE_BUTTON = (
+        By.XPATH,
+        "//h6[normalize-space()='Edit Attachment']"
+        "/following::button[@type='submit' and normalize-space()='Save'][1]",
+    )
+
     def open_my_info_page(self):
         self.click(self.MY_INFO_MENU)
 
@@ -782,7 +793,17 @@ class MyInfoPage(BasePage):
         self.highlight_element(self.ADD_ATTACHMENT_BUTTON)
 
     def click_add_attachment_button(self):
-        self.click(self.ADD_ATTACHMENT_BUTTON)
+        add_button = self.wait_for_clickable(self.ADD_ATTACHMENT_BUTTON)
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            add_button,
+        )
+
+        self.driver.execute_script("arguments[0].click();", add_button)
+
+    def wait_until_add_attachment_form_is_displayed(self):
+        self.wait_for_visible(self.ADD_ATTACHMENT_FORM_TITLE)
 
     def is_add_attachment_form_displayed(self):
         return self.is_element_visible(self.ADD_ATTACHMENT_FORM_TITLE)
@@ -873,3 +894,99 @@ class MyInfoPage(BasePage):
         )
 
         self.wait.until(lambda _: self.is_element_visible(attachment_file_locator))
+
+    def get_attachment_row_by_file_name(self, file_name: str):
+        attachment_row_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            "//div[contains(@class,'oxd-table-card')]"
+            f"[.//div[contains(normalize-space(), {self.get_xpath_text_literal(file_name)})]]",
+        )
+
+        return self.wait_for_visible(attachment_row_locator)
+
+    def click_edit_attachment_by_file_name(self, file_name: str):
+        attachment_row = self.get_attachment_row_by_file_name(file_name)
+
+        edit_button = attachment_row.find_element(
+            By.XPATH,
+            ".//button[.//i[contains(@class,'bi-pencil-fill')]]",
+        )
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            edit_button,
+        )
+
+        self.driver.execute_script("arguments[0].click();", edit_button)
+
+    def is_edit_attachment_form_displayed(self):
+        return self.is_element_visible(self.EDIT_ATTACHMENT_FORM_TITLE)
+
+    def highlight_edit_attachment_form_title(self):
+        self.highlight_element(self.EDIT_ATTACHMENT_FORM_TITLE)
+
+    def replace_attachment_file(self, file_path: str):
+        self.wait_for_presence(self.ATTACHMENT_FILE_INPUT).send_keys(file_path)
+
+    def replace_attachment_comment(self, comment: str):
+        comment_field = self.wait_for_visible(self.ATTACHMENT_COMMENT_TEXTAREA)
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            comment_field,
+        )
+
+        comment_field.click()
+        comment_field.send_keys(Keys.CONTROL, "a")
+        comment_field.send_keys(Keys.BACKSPACE)
+        comment_field.send_keys(comment)
+        comment_field.send_keys(Keys.TAB)
+
+        self.wait.until(
+            lambda _: self.get_attribute(self.ATTACHMENT_COMMENT_TEXTAREA, "value")
+            == comment
+        )
+
+    def wait_until_attachment_file_input_contains(self, file_name: str):
+        self.wait.until(
+            lambda _: file_name
+            in (self.get_attribute(self.ATTACHMENT_FILE_INPUT, "value") or "")
+        )
+
+    def save_edited_attachment(self):
+        self.click(self.EDIT_ATTACHMENT_SAVE_BUTTON)
+
+    def is_attachment_comment_displayed(self, comment: str):
+        attachment_comment_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            "//div[contains(@class,'oxd-table-card')]"
+            f"//div[contains(normalize-space(), {self.get_xpath_text_literal(comment)})]",
+        )
+
+        return self.is_element_visible(attachment_comment_locator)
+
+    def wait_until_attachment_comment_is_displayed(self, comment: str):
+        attachment_comment_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            "//div[contains(@class,'oxd-table-card')]"
+            f"//div[contains(normalize-space(), {self.get_xpath_text_literal(comment)})]",
+        )
+
+        self.wait.until(lambda _: self.is_element_visible(attachment_comment_locator))
+
+    def highlight_uploaded_attachment_comment(self, comment: str):
+        attachment_comment_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            "//div[contains(@class,'oxd-table-card')]"
+            f"//div[contains(normalize-space(), {self.get_xpath_text_literal(comment)})]",
+        )
+
+        self.highlight_element(attachment_comment_locator)
