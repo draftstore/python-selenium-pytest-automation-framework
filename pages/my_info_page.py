@@ -225,6 +225,20 @@ class MyInfoPage(BasePage):
         "//p[normalize-space()='Accepts up to 1MB']",
     )
 
+    ATTACHMENT_FILE_REQUIRED_ERROR_MESSAGE = (
+        By.XPATH,
+        "//label[normalize-space()='Select File']"
+        "/ancestor::div[contains(@class,'oxd-input-group')]"
+        "//span[contains(@class,'oxd-input-field-error-message')]",
+    )
+
+    ATTACHMENT_COMMENT_ERROR_MESSAGE = (
+        By.XPATH,
+        "//label[normalize-space()='Comment']"
+        "/ancestor::div[contains(@class,'oxd-input-group')]"
+        "//span[contains(@class,'oxd-input-field-error-message')]",
+    )
+
     def open_my_info_page(self):
         self.click(self.MY_INFO_MENU)
 
@@ -793,3 +807,21 @@ class MyInfoPage(BasePage):
 
     def highlight_attachment_cancel_button(self):
         self.highlight_element(self.ATTACHMENT_CANCEL_BUTTON)
+
+    def get_attachment_file_required_error_message(self):
+        return self.get_text(self.ATTACHMENT_FILE_REQUIRED_ERROR_MESSAGE)
+
+    def highlight_attachment_file_required_error_message(self):
+        self.highlight_element(self.ATTACHMENT_FILE_REQUIRED_ERROR_MESSAGE)
+
+    def save_attachment(self):
+        self.click(self.ATTACHMENT_SAVE_BUTTON)
+
+    def enter_attachment_comment(self, comment: str):
+        self.enter_text(self.ATTACHMENT_COMMENT_TEXTAREA, comment)
+
+    def get_attachment_comment_error_message(self):
+        return self.get_text(self.ATTACHMENT_COMMENT_ERROR_MESSAGE)
+
+    def highlight_attachment_comment_error_message(self):
+        self.highlight_element(self.ATTACHMENT_COMMENT_ERROR_MESSAGE)
