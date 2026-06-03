@@ -502,3 +502,15 @@ class BasePage:
         """
 
         self.driver.execute_script(script, test_name)
+
+    def highlight_element(self, locator, border_style: str = "4px solid red"):
+        element = self.wait_for_visible(locator)
+
+        self.driver.execute_script(
+            "arguments[0].style.border = arguments[1];"
+            "arguments[0].style.boxShadow = '0 0 10px red';",
+            element,
+            border_style,
+        )
+
+        return element

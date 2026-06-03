@@ -176,6 +176,18 @@ class MyInfoPage(BasePage):
         "/ancestor::form//button[@type='submit' and normalize-space()='Save']",
     )
 
+    # Attachments Section
+    ATTACHMENTS_HEADING = (
+        By.XPATH,
+        "//h6[normalize-space()='Attachments']",
+    )
+
+    ADD_ATTACHMENT_BUTTON = (
+        By.XPATH,
+        "//h6[normalize-space()='Attachments']"
+        "/following::button[normalize-space()='Add'][1]",
+    )
+
     def open_my_info_page(self):
         self.click(self.MY_INFO_MENU)
 
@@ -693,3 +705,15 @@ class MyInfoPage(BasePage):
 
     def save_custom_fields(self):
         self.click(self.CUSTOM_FIELDS_SAVE_BUTTON)
+
+    def is_attachments_heading_displayed(self):
+        return self.is_element_visible(self.ATTACHMENTS_HEADING)
+
+    def is_add_attachment_button_displayed(self):
+        return self.is_element_visible(self.ADD_ATTACHMENT_BUTTON)
+
+    def highlight_attachments_heading(self):
+        self.highlight_element(self.ATTACHMENTS_HEADING)
+
+    def highlight_add_attachment_button(self):
+        self.highlight_element(self.ADD_ATTACHMENT_BUTTON)
