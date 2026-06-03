@@ -188,6 +188,43 @@ class MyInfoPage(BasePage):
         "/following::button[normalize-space()='Add'][1]",
     )
 
+    ADD_ATTACHMENT_FORM_TITLE = (
+        By.XPATH,
+        "//h6[normalize-space()='Add Attachment']",
+    )
+
+    ATTACHMENT_SELECT_FILE_LABEL = (
+        By.XPATH,
+        "//label[normalize-space()='Select File']",
+    )
+
+    ATTACHMENT_BROWSE_BUTTON = (
+        By.XPATH,
+        "//div[contains(@class,'oxd-file-button') and normalize-space()='Browse']",
+    )
+
+    ATTACHMENT_COMMENT_TEXTAREA = (
+        By.XPATH,
+        "//textarea[@placeholder='Type comment here']",
+    )
+
+    ATTACHMENT_CANCEL_BUTTON = (
+        By.XPATH,
+        "//h6[normalize-space()='Add Attachment']"
+        "/following::button[@type='button' and normalize-space()='Cancel'][1]",
+    )
+
+    ATTACHMENT_SAVE_BUTTON = (
+        By.XPATH,
+        "//h6[normalize-space()='Add Attachment']"
+        "/following::button[@type='submit' and normalize-space()='Save'][1]",
+    )
+
+    ATTACHMENT_FILE_SIZE_HINT = (
+        By.XPATH,
+        "//p[normalize-space()='Accepts up to 1MB']",
+    )
+
     def open_my_info_page(self):
         self.click(self.MY_INFO_MENU)
 
@@ -717,3 +754,42 @@ class MyInfoPage(BasePage):
 
     def highlight_add_attachment_button(self):
         self.highlight_element(self.ADD_ATTACHMENT_BUTTON)
+
+    def click_add_attachment_button(self):
+        self.click(self.ADD_ATTACHMENT_BUTTON)
+
+    def is_add_attachment_form_displayed(self):
+        return self.is_element_visible(self.ADD_ATTACHMENT_FORM_TITLE)
+
+    def is_attachment_select_file_label_displayed(self):
+        return self.is_element_visible(self.ATTACHMENT_SELECT_FILE_LABEL)
+
+    def is_attachment_browse_button_displayed(self):
+        return self.is_element_visible(self.ATTACHMENT_BROWSE_BUTTON)
+
+    def is_attachment_comment_textarea_displayed(self):
+        return self.is_element_visible(self.ATTACHMENT_COMMENT_TEXTAREA)
+
+    def is_attachment_cancel_button_displayed(self):
+        return self.is_element_visible(self.ATTACHMENT_CANCEL_BUTTON)
+
+    def is_attachment_save_button_displayed(self):
+        return self.is_element_visible(self.ATTACHMENT_SAVE_BUTTON)
+
+    def is_attachment_file_size_hint_displayed(self):
+        return self.is_element_visible(self.ATTACHMENT_FILE_SIZE_HINT)
+
+    def highlight_add_attachment_form_title(self):
+        self.highlight_element(self.ADD_ATTACHMENT_FORM_TITLE)
+
+    def highlight_attachment_browse_button(self):
+        self.highlight_element(self.ATTACHMENT_BROWSE_BUTTON)
+
+    def highlight_attachment_comment_textarea(self):
+        self.highlight_element(self.ATTACHMENT_COMMENT_TEXTAREA)
+
+    def highlight_attachment_save_button(self):
+        self.highlight_element(self.ATTACHMENT_SAVE_BUTTON)
+
+    def highlight_attachment_cancel_button(self):
+        self.highlight_element(self.ATTACHMENT_CANCEL_BUTTON)
