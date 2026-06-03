@@ -239,6 +239,18 @@ class MyInfoPage(BasePage):
         "//span[contains(@class,'oxd-input-field-error-message')]",
     )
 
+    ATTACHMENT_FILE_INPUT = (
+        By.XPATH,
+        "//input[@type='file']",
+    )
+
+    ATTACHMENT_TABLE_ROWS = (
+        By.XPATH,
+        "//h6[normalize-space()='Attachments']"
+        "/following::div[contains(@class,'oxd-table-body')][1]"
+        "//div[contains(@class,'oxd-table-card')]",
+    )
+
     def open_my_info_page(self):
         self.click(self.MY_INFO_MENU)
 
@@ -825,3 +837,39 @@ class MyInfoPage(BasePage):
 
     def highlight_attachment_comment_error_message(self):
         self.highlight_element(self.ATTACHMENT_COMMENT_ERROR_MESSAGE)
+
+    def upload_attachment_file(self, file_path: str):
+        self.wait_for_presence(self.ATTACHMENT_FILE_INPUT).send_keys(file_path)
+
+    def is_attachment_file_displayed(self, file_name: str):
+        attachment_file_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            f"//div[contains(@class,'oxd-table-card')]"
+            f"//div[contains(normalize-space(), {self.get_xpath_text_literal(file_name)})]",
+        )
+
+        return self.is_element_visible(attachment_file_locator)
+
+    def highlight_uploaded_attachment_file(self, file_name: str):
+        attachment_file_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            f"//div[contains(@class,'oxd-table-card')]"
+            f"//div[contains(normalize-space(), {self.get_xpath_text_literal(file_name)})]",
+        )
+
+        self.highlight_element(attachment_file_locator)
+
+    def wait_until_attachment_file_is_displayed(self, file_name: str):
+        attachment_file_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            "//div[contains(@class,'oxd-table-card')]"
+            f"//div[contains(normalize-space(), {self.get_xpath_text_literal(file_name)})]",
+        )
+
+        self.wait.until(lambda _: self.is_element_visible(attachment_file_locator))
