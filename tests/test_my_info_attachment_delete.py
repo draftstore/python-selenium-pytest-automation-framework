@@ -1,7 +1,6 @@
 import allure
 
 from pathlib import Path
-from datetime import datetime
 
 from pages.login_page import LoginPage
 from pages.dashboard_page import DashboardPage
@@ -66,76 +65,87 @@ def get_latest_attachment_image():
 
 
 @allure.feature("My Info")
-@allure.story("Attachment Upload")
-@allure.title("Verify user can upload a valid image attachment with comment")
-def test_user_can_upload_valid_image_attachment_with_comment(driver):
+@allure.story("Attachment Delete")
+@allure.title("Verify user can delete an uploaded attachment")
+def test_user_can_delete_uploaded_attachment(driver):
     attachment_file_path = get_latest_attachment_image()
     attachment_file_name = attachment_file_path.name
 
-    attachment_comment = (
-        f"Automation upload attachment comment "
-        f"{datetime.now().strftime('%Y%m%d%H%M%S')}"
-    )
-
     my_info_page = open_add_attachment_form(driver)
 
-    with allure.step("Attach selected test data"):
+    with allure.step("Attach selected test data file path"):
         allure.attach(
-            f"Attachment File: {attachment_file_path}\n"
-            f"Attachment Comment: {attachment_comment}",
-            name="Attachment Upload Test Data",
+            str(attachment_file_path),
+            name="Attachment Delete Test Data",
             attachment_type=allure.attachment_type.TEXT,
         )
 
-    with allure.step("Upload valid image attachment and enter comment"):
+    with allure.step("Upload attachment before delete"):
         my_info_page.upload_attachment_file(str(attachment_file_path))
-        my_info_page.enter_attachment_comment(attachment_comment)
-
-        my_info_page.highlight_attachment_comment_textarea()
 
         allure.attach(
             driver.get_screenshot_as_png(),
-            name="Attachment Image Selected With Comment",
-            attachment_type=allure.attachment_type.PNG,
-        )
-
-    with allure.step("Save uploaded attachment"):
-        assert (
-            my_info_page.is_attachment_save_button_displayed()
-        ), "Attachment Save button was not displayed"
-
-        my_info_page.highlight_attachment_save_button()
-
-        allure.attach(
-            driver.get_screenshot_as_png(),
-            name="Attachment Save Button Highlighted Before Upload",
+            name="Attachment Selected Before Delete Test",
             attachment_type=allure.attachment_type.PNG,
         )
 
         my_info_page.save_attachment()
 
-    with allure.step("Wait until uploaded attachment details appear in table"):
+    with allure.step("Verify uploaded attachment appears in table"):
         my_info_page.wait_until_attachment_file_is_displayed(attachment_file_name)
-        my_info_page.wait_until_attachment_comment_is_displayed(attachment_comment)
 
-    with allure.step(
-        "Verify uploaded file and comment are displayed in attachment table"
-    ):
         assert my_info_page.is_attachment_file_displayed(attachment_file_name), (
-            f"Uploaded attachment file was not displayed in table: "
+            f"Attachment file was not displayed before delete: "
             f"{attachment_file_name}"
         )
 
-        assert my_info_page.is_attachment_comment_displayed(attachment_comment), (
-            f"Uploaded attachment comment was not displayed in table: "
-            f"{attachment_comment}"
-        )
-
         my_info_page.highlight_uploaded_attachment_file(attachment_file_name)
-        my_info_page.highlight_uploaded_attachment_comment(attachment_comment)
 
         allure.attach(
             driver.get_screenshot_as_png(),
-            name="Uploaded Attachment File And Comment Highlighted",
+            name="Uploaded Attachment Highlighted Before Delete",
+            attachment_type=allure.attachment_type.PNG,
+        )
+
+    with allure.step("Click Delete button for uploaded attachment"):
+        my_info_page.highlight_delete_attachment_button_by_file_name(
+            attachment_file_name
+        )
+
+        allure.attach(
+            driver.get_screenshot_as_png(),
+            name="Delete Button Highlighted Before Click",
+            attachment_type=allure.attachment_type.PNG,
+        )
+
+        my_info_page.click_delete_attachment_by_file_name(attachment_file_name)
+
+    with allure.step("Verify delete confirmation modal is displayed"):
+        assert (
+            my_info_page.is_delete_attachment_confirmation_modal_displayed()
+        ), "Delete confirmation modal was not displayed"
+
+        my_info_page.highlight_delete_attachment_confirmation_modal()
+
+        allure.attach(
+            driver.get_screenshot_as_png(),
+            name="Delete Confirmation Modal Highlighted",
+            attachment_type=allure.attachment_type.PNG,
+        )
+
+    with allure.step("Confirm attachment delete"):
+        my_info_page.confirm_delete_attachment()
+
+    with allure.step("Verify attachment is removed from table"):
+        my_info_page.wait_until_attachment_file_is_removed(attachment_file_name)
+
+        assert not my_info_page.is_attachment_file_displayed(attachment_file_name), (
+            f"Attachment file was still displayed after delete: "
+            f"{attachment_file_name}"
+        )
+
+        allure.attach(
+            driver.get_screenshot_as_png(),
+            name="Attachment Removed From Table",
             attachment_type=allure.attachment_type.PNG,
         )

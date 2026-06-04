@@ -262,6 +262,50 @@ class MyInfoPage(BasePage):
         "/following::button[@type='submit' and normalize-space()='Save'][1]",
     )
 
+    DELETE_ATTACHMENT_CONFIRMATION_MODAL = (
+        By.XPATH,
+        "//p[normalize-space()='Are you Sure?']",
+    )
+
+    CONFIRM_DELETE_ATTACHMENT_BUTTON = (
+        By.XPATH,
+        "//button[normalize-space()='Yes, Delete']",
+    )
+
+    CANCEL_DELETE_ATTACHMENT_BUTTON = (
+        By.XPATH,
+        "//button[normalize-space()='No, Cancel']",
+    )
+
+    ATTACHMENT_FORM_LOADER = (
+        By.XPATH,
+        "//div[contains(@class,'oxd-form-loader')]",
+    )
+
+    EDIT_ATTACHMENT_CURRENT_FILE_TEXT = (
+        By.XPATH,
+        "//h6[normalize-space()='Edit Attachment']"
+        "/following::label[normalize-space()='Current File'][1]"
+        "/ancestor::div[contains(@class,'oxd-input-group')]"
+        "//p[contains(@class,'oxd-text--p')]",
+    )
+
+    EDIT_ATTACHMENT_REPLACE_FILE_INPUT = (
+        By.XPATH,
+        "//h6[normalize-space()='Edit Attachment']"
+        "/following::label[normalize-space()='Replace With'][1]"
+        "/ancestor::div[contains(@class,'oxd-input-group')]"
+        "//input[@type='file']",
+    )
+
+    EDIT_ATTACHMENT_SELECTED_FILE_TEXT = (
+        By.XPATH,
+        "//h6[normalize-space()='Edit Attachment']"
+        "/following::label[normalize-space()='Replace With'][1]"
+        "/ancestor::div[contains(@class,'oxd-input-group')]"
+        "//div[contains(@class,'oxd-file-input-div')]",
+    )
+
     def open_my_info_page(self):
         self.click(self.MY_INFO_MENU)
 
@@ -927,10 +971,35 @@ class MyInfoPage(BasePage):
     def highlight_edit_attachment_form_title(self):
         self.highlight_element(self.EDIT_ATTACHMENT_FORM_TITLE)
 
+    def get_edit_attachment_current_file_name(self):
+        elements = self.driver.find_elements(*self.EDIT_ATTACHMENT_CURRENT_FILE_TEXT)
+
+        if not elements:
+            return ""
+
+        return elements[0].text.strip()
+
+    def get_edit_attachment_selected_file_name(self):
+        return self.get_text(self.EDIT_ATTACHMENT_SELECTED_FILE_TEXT)
+
     def replace_attachment_file(self, file_path: str):
-        self.wait_for_presence(self.ATTACHMENT_FILE_INPUT).send_keys(file_path)
+        file_input = self.wait_for_presence(self.EDIT_ATTACHMENT_REPLACE_FILE_INPUT)
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            file_input,
+        )
+
+        file_input.send_keys(file_path)
+
+    def wait_until_edit_attachment_selected_file_is(self, file_name: str):
+        self.wait.until(
+            lambda _: file_name in self.get_edit_attachment_selected_file_name()
+        )
 
     def replace_attachment_comment(self, comment: str):
+        self.wait_until_attachment_form_loader_disappears()
+
         comment_field = self.wait_for_visible(self.ATTACHMENT_COMMENT_TEXTAREA)
 
         self.driver.execute_script(
@@ -938,16 +1007,33 @@ class MyInfoPage(BasePage):
             comment_field,
         )
 
-        comment_field.click()
-        comment_field.send_keys(Keys.CONTROL, "a")
-        comment_field.send_keys(Keys.BACKSPACE)
-        comment_field.send_keys(comment)
-        comment_field.send_keys(Keys.TAB)
+        self.wait_until_attachment_form_loader_disappears()
 
-        self.wait.until(
-            lambda _: self.get_attribute(self.ATTACHMENT_COMMENT_TEXTAREA, "value")
-            == comment
+        self.driver.execute_script(
+            """
+            const textarea = arguments[0];
+            const value = arguments[1];
+
+            const nativeTextAreaValueSetter =
+                Object.getOwnPropertyDescriptor(
+                    window.HTMLTextAreaElement.prototype,
+                    'value'
+                ).set;
+
+            nativeTextAreaValueSetter.call(textarea, '');
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            textarea.dispatchEvent(new Event('change', { bubbles: true }));
+
+            nativeTextAreaValueSetter.call(textarea, value);
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            textarea.dispatchEvent(new Event('change', { bubbles: true }));
+            textarea.dispatchEvent(new Event('blur', { bubbles: true }));
+            """,
+            comment_field,
+            comment,
         )
+
+        self.wait.until(lambda _: self.get_attachment_comment_value() == comment)
 
     def wait_until_attachment_file_input_contains(self, file_name: str):
         self.wait.until(
@@ -990,3 +1076,146 @@ class MyInfoPage(BasePage):
         )
 
         self.highlight_element(attachment_comment_locator)
+
+    def click_delete_attachment_by_file_name(self, file_name: str):
+        attachment_row = self.get_attachment_row_by_file_name(file_name)
+
+        delete_button = attachment_row.find_element(
+            By.XPATH,
+            ".//button[.//i[contains(@class,'bi-trash')]]",
+        )
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            delete_button,
+        )
+
+        self.driver.execute_script("arguments[0].click();", delete_button)
+
+    def highlight_delete_attachment_button_by_file_name(self, file_name: str):
+        attachment_row = self.get_attachment_row_by_file_name(file_name)
+
+        delete_button = attachment_row.find_element(
+            By.XPATH,
+            ".//button[.//i[contains(@class,'bi-trash')]]",
+        )
+
+        self.driver.execute_script(
+            "arguments[0].style.border = '4px solid red';"
+            "arguments[0].style.boxShadow = '0 0 10px red';",
+            delete_button,
+        )
+
+    def is_delete_attachment_confirmation_modal_displayed(self):
+        return self.is_element_visible(self.DELETE_ATTACHMENT_CONFIRMATION_MODAL)
+
+    def highlight_delete_attachment_confirmation_modal(self):
+        self.highlight_element(self.DELETE_ATTACHMENT_CONFIRMATION_MODAL)
+
+    def confirm_delete_attachment(self):
+        self.click(self.CONFIRM_DELETE_ATTACHMENT_BUTTON)
+
+    def wait_until_attachment_file_is_removed(self, file_name: str):
+        attachment_file_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            "//div[contains(@class,'oxd-table-card')]"
+            f"//div[contains(normalize-space(), {self.get_xpath_text_literal(file_name)})]",
+        )
+
+        self.wait.until(
+            lambda _: len(self.driver.find_elements(*attachment_file_locator)) == 0
+        )
+
+    def get_attachment_comment_value(self):
+        return self.get_attribute(self.ATTACHMENT_COMMENT_TEXTAREA, "value") or ""
+
+    def is_attachment_row_displayed_by_file_name_and_comment(
+        self, file_name: str, comment: str
+    ):
+        attachment_row_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            "//div[contains(@class,'oxd-table-card')]"
+            f"[.//div[contains(normalize-space(), {self.get_xpath_text_literal(file_name)})]"
+            f" and .//div[contains(normalize-space(), {self.get_xpath_text_literal(comment)})]]",
+        )
+
+        return self.is_element_visible(attachment_row_locator)
+
+    def wait_until_attachment_row_is_displayed_by_file_name_and_comment(
+        self, file_name: str, comment: str
+    ):
+        attachment_row_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            "//div[contains(@class,'oxd-table-card')]"
+            f"[.//div[contains(normalize-space(), {self.get_xpath_text_literal(file_name)})]"
+            f" and .//div[contains(normalize-space(), {self.get_xpath_text_literal(comment)})]]",
+        )
+
+        self.wait.until(lambda _: self.is_element_visible(attachment_row_locator))
+
+    def highlight_attachment_row_by_file_name_and_comment(
+        self, file_name: str, comment: str
+    ):
+        attachment_row_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            "//div[contains(@class,'oxd-table-card')]"
+            f"[.//div[contains(normalize-space(), {self.get_xpath_text_literal(file_name)})]"
+            f" and .//div[contains(normalize-space(), {self.get_xpath_text_literal(comment)})]]",
+        )
+
+        self.highlight_element(attachment_row_locator)
+
+    def click_edit_attachment_by_file_name_and_comment(
+        self, file_name: str, comment: str
+    ):
+        attachment_row = self.get_attachment_row_by_file_name_and_comment(
+            file_name,
+            comment,
+        )
+
+        edit_button = attachment_row.find_element(
+            By.XPATH,
+            ".//button[.//i[contains(@class,'bi-pencil-fill')]]",
+        )
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            edit_button,
+        )
+
+        self.driver.execute_script("arguments[0].click();", edit_button)
+
+    def get_attachment_row_by_file_name_and_comment(self, file_name: str, comment: str):
+        attachment_row_locator = (
+            By.XPATH,
+            "//h6[normalize-space()='Attachments']"
+            "/following::div[contains(@class,'oxd-table-body')][1]"
+            "//div[contains(@class,'oxd-table-card')]"
+            f"[.//div[contains(normalize-space(), {self.get_xpath_text_literal(file_name)})]"
+            f" and .//div[contains(normalize-space(), {self.get_xpath_text_literal(comment)})]]",
+        )
+
+        return self.wait_for_visible(attachment_row_locator)
+
+    def wait_until_attachment_form_loader_disappears(self):
+        self.wait.until(
+            lambda _: len(self.driver.find_elements(*self.ATTACHMENT_FORM_LOADER)) == 0
+        )
+
+    def get_all_attachment_rows_text(self):
+        rows = self.driver.find_elements(*self.ATTACHMENT_TABLE_ROWS)
+        return [row.text for row in rows]
+
+    def wait_until_edit_attachment_current_file_is(self, expected_file_name: str):
+        self.wait.until(
+            lambda _: expected_file_name
+            in (self.get_edit_attachment_current_file_name() or "")
+        )
