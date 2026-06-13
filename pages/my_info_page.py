@@ -1605,3 +1605,20 @@ class MyInfoPage(BasePage):
         self.highlight_element(
             self.get_contact_details_field_error_locator_by_label(field_label)
         )
+
+    def enter_contact_details_data(self, contact_details_data: dict):
+        for field_label, value in contact_details_data.items():
+            self.enter_contact_details_input(field_label, value)
+
+    def verify_contact_details_data(self, expected_contact_details_data: dict):
+        """
+        Verify Contact Details saved values are displayed correctly.
+        """
+        for field_label, expected_value in expected_contact_details_data.items():
+            actual_value = self.get_contact_details_input_value(field_label)
+
+            assert actual_value == expected_value, (
+                f"Contact Details value mismatch for field: {field_label}. "
+                f"Expected: '{expected_value}', "
+                f"Actual: '{actual_value}'"
+            )
