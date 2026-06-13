@@ -1766,3 +1766,93 @@ class MyInfoPage(BasePage):
         self.highlight_element(
             self.get_emergency_contact_field_error_locator_by_label(field_label)
         )
+
+    def enter_emergency_contact_data(self, emergency_contact_data: dict):
+        """
+        Enter multiple Emergency Contact fields dynamically using field label and value.
+        """
+        for field_label, value in emergency_contact_data.items():
+            self.enter_emergency_contact_input(field_label, value)
+
+    def get_emergency_contact_input_value(self, field_label: str):
+        """
+        Get current value from Emergency Contact input field by label.
+        """
+        field = self.wait_for_visible(
+            self.get_emergency_contact_input_locator_by_label(field_label)
+        )
+
+        return field.get_attribute("value")
+
+    def verify_emergency_contact_data_in_form(
+        self, expected_emergency_contact_data: dict
+    ):
+        """
+        Verify Emergency Contact form values before saving.
+        """
+        for field_label, expected_value in expected_emergency_contact_data.items():
+            actual_value = self.get_emergency_contact_input_value(field_label)
+
+            assert actual_value == expected_value, (
+                f"Emergency Contact value mismatch for field: {field_label}. "
+                f"Expected: '{expected_value}', "
+                f"Actual: '{actual_value}'"
+            )
+
+    def wait_until_emergency_contact_table_row_is_displayed(self, contact_name: str):
+        """
+        Wait until saved Emergency Contact appears in Assigned Emergency Contacts table.
+        """
+        row_locator = (
+            By.XPATH,
+            f"//div[@class='oxd-table-card']"
+            f"[.//div[normalize-space()={self.get_xpath_text_literal(contact_name)}]]",
+        )
+
+        return self.wait_for_visible(row_locator)
+
+    def is_emergency_contact_table_row_displayed(self, contact_name: str):
+        """
+        Return True if Emergency Contact row is displayed in table.
+        """
+        try:
+            self.wait_until_emergency_contact_table_row_is_displayed(contact_name)
+            return True
+        except TimeoutException:
+            return False
+
+    def verify_emergency_contact_saved_in_table(
+        self, expected_emergency_contact_data: dict
+    ):
+        """
+        Verify saved Emergency Contact data is visible in Assigned Emergency Contacts table.
+        """
+        contact_name = expected_emergency_contact_data["Name"]
+
+        row = self.wait_until_emergency_contact_table_row_is_displayed(contact_name)
+
+        row_text = row.text
+
+        assert (
+            expected_emergency_contact_data["Name"] in row_text
+        ), f"Emergency Contact Name was not found in table row. Row text: {row_text}"
+
+        assert (
+            expected_emergency_contact_data["Relationship"] in row_text
+        ), f"Emergency Contact Relationship was not found in table row. Row text: {row_text}"
+
+        assert (
+            expected_emergency_contact_data["Mobile"] in row_text
+        ), f"Emergency Contact Mobile was not found in table row. Row text: {row_text}"
+
+    def highlight_emergency_contact_table_row(self, contact_name: str):
+        """
+        Highlight saved Emergency Contact table row.
+        """
+        row_locator = (
+            By.XPATH,
+            f"//div[@class='oxd-table-card']"
+            f"[.//div[normalize-space()={self.get_xpath_text_literal(contact_name)}]]",
+        )
+
+        self.highlight_element(row_locator)
