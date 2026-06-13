@@ -1,5 +1,7 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 
 from pages.base_page import BasePage
@@ -329,6 +331,13 @@ class MyInfoPage(BasePage):
         "/ancestor::div[contains(@class,'oxd-input-group')]"
         "//div[contains(@class,'oxd-select-text')]",
     )
+
+    CONTACT_DETAILS_FORM_LOADER = (
+        By.XPATH,
+        "//div[contains(@class,'oxd-form-loader')]",
+    )
+
+    CONTACT_DETAILS_TOAST = (By.XPATH, "//div[contains(@class,'oxd-toast')]")
 
     def open_my_info_page(self):
         self.click(self.MY_INFO_MENU)
@@ -1293,3 +1302,306 @@ class MyInfoPage(BasePage):
 
     def highlight_contact_details_header(self):
         self.highlight_element(self.CONTACT_DETAILS_HEADER)
+
+    def get_contact_details_field_error_locator_by_label(self, field_label: str):
+        return (
+            By.XPATH,
+            f"//label[normalize-space()={self.get_xpath_text_literal(field_label)}]"
+            "/ancestor::div[contains(@class,'oxd-input-group')]"
+            "//span[contains(@class,'oxd-input-field-error-message')]",
+        )
+
+    def wait_until_contact_details_loader_disappears(self, timeout=10):
+        """
+        Wait until Contact Details form loader disappears.
+
+        This prevents ElementClickInterceptedException caused by:
+        <div class="oxd-form-loader">...</div>
+        """
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                EC.invisibility_of_element_located(self.CONTACT_DETAILS_FORM_LOADER)
+            )
+        except TimeoutException:
+            pass
+
+    def get_contact_details_input_element(self, field_label: str, timeout=10):
+        """
+        Always fetch a fresh Contact Details input element by label.
+
+        This helps avoid StaleElementReferenceException after OrangeHRM form re-render.
+        """
+        self.wait_until_contact_details_loader_disappears()
+
+        locator = self.get_contact_details_input_locator_by_label(field_label)
+
+        element = WebDriverWait(self.driver, timeout).until(
+            EC.presence_of_element_located(locator)
+        )
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            element,
+        )
+
+        self.wait_until_contact_details_loader_disappears()
+
+        return WebDriverWait(self.driver, timeout).until(
+            EC.presence_of_element_located(locator)
+        )
+
+    def clear_contact_details_input(self, field_label: str):
+        """
+        Clear Contact Details input using JavaScript native value setter.
+
+        Avoids:
+            field.click()
+            field.clear()
+            field.send_keys()
+
+        Because OrangeHRM loader can intercept normal Selenium interactions.
+        """
+        for _ in range(3):
+            try:
+                field = self.get_contact_details_input_element(field_label)
+
+                self.driver.execute_script(
+                    """
+                    const input = arguments[0];
+
+                    const nativeInputValueSetter =
+                        Object.getOwnPropertyDescriptor(
+                            window.HTMLInputElement.prototype,
+                            'value'
+                        ).set;
+
+                    input.focus();
+
+                    nativeInputValueSetter.call(input, '');
+
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+
+                    input.blur();
+                    input.dispatchEvent(new Event('blur', { bubbles: true }));
+                    """,
+                    field,
+                )
+
+                self.wait_until_contact_details_loader_disappears()
+                return
+
+            except StaleElementReferenceException:
+                self.wait_until_contact_details_loader_disappears()
+
+        raise StaleElementReferenceException(
+            f"Unable to clear Contact Details field: {field_label}"
+        )
+
+    def get_contact_details_input_value(self, field_label: str):
+        """
+        Get current value from a Contact Details input field.
+        """
+        for _ in range(3):
+            try:
+                self.wait_until_contact_details_loader_disappears()
+
+                field = self.get_contact_details_input_element(field_label)
+
+                return field.get_attribute("value")
+
+            except StaleElementReferenceException:
+                self.wait_until_contact_details_loader_disappears()
+
+        field = self.get_contact_details_input_element(field_label)
+        return field.get_attribute("value")
+
+    def get_contact_details_input_max_length(self, field_label: str):
+        """
+        Get maxlength attribute from Contact Details input.
+
+        Returns:
+            int  -> if maxlength exists in DOM
+            None -> if maxlength does not exist in DOM
+        """
+        for _ in range(3):
+            try:
+                self.wait_until_contact_details_loader_disappears()
+
+                field = self.get_contact_details_input_element(field_label)
+
+                max_length = field.get_attribute("maxlength")
+
+                return int(max_length) if max_length else None
+
+            except StaleElementReferenceException:
+                self.wait_until_contact_details_loader_disappears()
+
+        field = self.get_contact_details_input_element(field_label)
+        max_length = field.get_attribute("maxlength")
+
+        return int(max_length) if max_length else None
+
+    def enter_contact_details_input(self, field_label: str, value: str):
+        """
+        Enter value into Contact Details input using JavaScript native value setter.
+
+        This avoids:
+            field.click()
+            field.clear()
+            field.send_keys()
+
+        Reason:
+            OrangeHRM Contact Details form sometimes displays a loader overlay,
+            which causes Selenium ElementClickInterceptedException.
+        """
+        for _ in range(3):
+            try:
+                field = self.get_contact_details_input_element(field_label)
+
+                self.driver.execute_script(
+                    """
+                    const input = arguments[0];
+                    const value = arguments[1];
+
+                    const nativeInputValueSetter =
+                        Object.getOwnPropertyDescriptor(
+                            window.HTMLInputElement.prototype,
+                            'value'
+                        ).set;
+
+                    input.focus();
+
+                    nativeInputValueSetter.call(input, '');
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+
+                    nativeInputValueSetter.call(input, value);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+
+                    input.blur();
+                    input.dispatchEvent(new Event('blur', { bubbles: true }));
+                    """,
+                    field,
+                    value,
+                )
+
+                self.wait_until_contact_details_loader_disappears()
+
+                self.wait.until(
+                    lambda _: self.get_contact_details_input_value(field_label) == value
+                )
+
+                return
+
+            except StaleElementReferenceException:
+                self.wait_until_contact_details_loader_disappears()
+
+        raise StaleElementReferenceException(
+            f"Unable to enter value into Contact Details field: {field_label}"
+        )
+
+    def save_contact_details(self):
+        """
+        Save Contact Details form safely using JavaScript click.
+
+        This avoids ElementClickInterceptedException when OrangeHRM loader overlays
+        the Save button.
+        """
+        self.wait_until_contact_details_loader_disappears()
+
+        save_button_locator = (
+            By.XPATH,
+            "//button[@type='submit' and normalize-space()='Save']",
+        )
+
+        for _ in range(3):
+            try:
+                save_button = self.wait.until(
+                    EC.presence_of_element_located(save_button_locator)
+                )
+
+                self.driver.execute_script(
+                    "arguments[0].scrollIntoView({block: 'center'});",
+                    save_button,
+                )
+
+                self.wait_until_contact_details_loader_disappears()
+
+                self.driver.execute_script(
+                    "arguments[0].click();",
+                    save_button,
+                )
+
+                self.wait_until_contact_details_loader_disappears()
+
+                return
+
+            except StaleElementReferenceException:
+                self.wait_until_contact_details_loader_disappears()
+
+        raise StaleElementReferenceException(
+            "Unable to click Contact Details Save button."
+        )
+
+    def get_contact_details_field_error_message(self, field_label: str):
+        """
+        Get validation error message displayed under a Contact Details field.
+        """
+        self.wait_until_contact_details_loader_disappears()
+
+        error_locator = self.get_contact_details_field_error_locator_by_label(
+            field_label
+        )
+
+        error_element = self.wait_for_visible(error_locator)
+
+        return error_element.text.strip()
+
+    def wait_until_contact_details_field_error_is_displayed(
+        self,
+        field_label: str,
+        expected_error_message: str,
+    ):
+        """
+        Wait until expected validation error message is displayed
+        under a Contact Details field.
+        """
+        self.wait_until_contact_details_loader_disappears()
+
+        error_locator = self.get_contact_details_field_error_locator_by_label(
+            field_label
+        )
+
+        self.wait.until(
+            lambda _: expected_error_message
+            in self.wait_for_visible(error_locator).text.strip()
+        )
+
+    def is_contact_details_field_error_displayed(
+        self,
+        field_label: str,
+        expected_error_message: str,
+    ):
+        """
+        Return True if expected validation message is displayed.
+        Return False if it is not displayed within timeout.
+        """
+        try:
+            self.wait_until_contact_details_field_error_is_displayed(
+                field_label,
+                expected_error_message,
+            )
+            return True
+
+        except TimeoutException:
+            return False
+
+    def highlight_contact_details_field_error(self, field_label: str):
+        """
+        Highlight Contact Details validation error message.
+        """
+        self.highlight_element(
+            self.get_contact_details_field_error_locator_by_label(field_label)
+        )
