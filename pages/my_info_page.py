@@ -339,6 +339,28 @@ class MyInfoPage(BasePage):
 
     CONTACT_DETAILS_TOAST = (By.XPATH, "//div[contains(@class,'oxd-toast')]")
 
+    EMERGENCY_CONTACTS_TAB = (
+        By.XPATH,
+        "//a[normalize-space()='Emergency Contacts']",
+    )
+
+    EMERGENCY_CONTACTS_ADD_BUTTON = (
+        By.XPATH,
+        "//h6[normalize-space()='Assigned Emergency Contacts']"
+        "/following::button[normalize-space()='Add'][1]",
+    )
+
+    EMERGENCY_CONTACTS_SAVE_BUTTON = (
+        By.XPATH,
+        "//h6[normalize-space()='Save Emergency Contact']"
+        "/following::button[@type='submit' and normalize-space()='Save'][1]",
+    )
+
+    EMERGENCY_CONTACTS_FORM_TITLE = (
+        By.XPATH,
+        "//h6[normalize-space()='Save Emergency Contact']",
+    )
+
     def open_my_info_page(self):
         self.click(self.MY_INFO_MENU)
 
@@ -1622,3 +1644,125 @@ class MyInfoPage(BasePage):
                 f"Expected: '{expected_value}', "
                 f"Actual: '{actual_value}'"
             )
+
+    def open_emergency_contacts_tab(self):
+        self.click(self.EMERGENCY_CONTACTS_TAB)
+
+    def wait_until_emergency_contacts_page_is_loaded(self):
+        return self.wait_for_visible(self.EMERGENCY_CONTACTS_ADD_BUTTON)
+
+    def click_emergency_contacts_add_button(self):
+        add_button = self.wait_for_visible(self.EMERGENCY_CONTACTS_ADD_BUTTON)
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            add_button,
+        )
+
+        self.wait.until(EC.element_to_be_clickable(self.EMERGENCY_CONTACTS_ADD_BUTTON))
+        add_button.click()
+
+    def wait_until_emergency_contact_form_is_displayed(self):
+        return self.wait_for_visible(self.EMERGENCY_CONTACTS_FORM_TITLE)
+
+    def get_emergency_contact_input_locator_by_label(self, field_label: str):
+        return (
+            By.XPATH,
+            f"//label[normalize-space()={self.get_xpath_text_literal(field_label)}]"
+            "/ancestor::div[contains(@class,'oxd-input-group')]"
+            "//input",
+        )
+
+    def get_emergency_contact_field_error_locator_by_label(self, field_label: str):
+        return (
+            By.XPATH,
+            f"//label[normalize-space()={self.get_xpath_text_literal(field_label)}]"
+            "/ancestor::div[contains(@class,'oxd-input-group')]"
+            "//span[contains(@class,'oxd-input-field-error-message')]",
+        )
+
+    def enter_emergency_contact_input(self, field_label: str, value: str):
+        field = self.wait_for_visible(
+            self.get_emergency_contact_input_locator_by_label(field_label)
+        )
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            field,
+        )
+
+        self.driver.execute_script(
+            """
+            const input = arguments[0];
+            const value = arguments[1];
+
+            const nativeInputValueSetter =
+                Object.getOwnPropertyDescriptor(
+                    window.HTMLInputElement.prototype,
+                    'value'
+                ).set;
+
+            input.focus();
+
+            nativeInputValueSetter.call(input, '');
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+
+            nativeInputValueSetter.call(input, value);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+
+            input.blur();
+            input.dispatchEvent(new Event('blur', { bubbles: true }));
+            """,
+            field,
+            value,
+        )
+
+    def save_emergency_contact(self):
+        save_button = self.wait_for_visible(self.EMERGENCY_CONTACTS_SAVE_BUTTON)
+
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            save_button,
+        )
+
+        self.wait.until(EC.element_to_be_clickable(self.EMERGENCY_CONTACTS_SAVE_BUTTON))
+
+        self.driver.execute_script(
+            "arguments[0].click();",
+            save_button,
+        )
+
+    def get_emergency_contact_field_error_message(self, field_label: str):
+        error_locator = self.get_emergency_contact_field_error_locator_by_label(
+            field_label
+        )
+
+        error_element = self.wait_for_visible(error_locator)
+
+        return error_element.text.strip()
+
+    def wait_until_emergency_contact_field_error_is_displayed(
+        self,
+        field_label: str,
+        expected_error_message: str,
+    ):
+        error_locator = self.get_emergency_contact_field_error_locator_by_label(
+            field_label
+        )
+
+        self.wait.until(
+            lambda _: expected_error_message
+            in self.wait_for_visible(error_locator).text.strip()
+        )
+
+    def highlight_emergency_contact_input(self, field_label: str):
+        self.highlight_element(
+            self.get_emergency_contact_input_locator_by_label(field_label)
+        )
+
+    def highlight_emergency_contact_field_error(self, field_label: str):
+        self.highlight_element(
+            self.get_emergency_contact_field_error_locator_by_label(field_label)
+        )
