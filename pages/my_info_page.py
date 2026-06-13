@@ -306,6 +306,30 @@ class MyInfoPage(BasePage):
         "//div[contains(@class,'oxd-file-input-div')]",
     )
 
+    # Contact Details Section
+    CONTACT_DETAILS_TAB = (
+        By.XPATH,
+        "//a[normalize-space()='Contact Details']",
+    )
+
+    CONTACT_DETAILS_HEADER = (
+        By.XPATH,
+        "//h6[normalize-space()='Contact Details']",
+    )
+
+    CONTACT_DETAILS_SAVE_BUTTON = (
+        By.XPATH,
+        "//h6[normalize-space()='Contact Details']"
+        "/following::button[@type='submit' and normalize-space()='Save'][1]",
+    )
+
+    CONTACT_DETAILS_COUNTRY_DROPDOWN = (
+        By.XPATH,
+        "//label[normalize-space()='Country']"
+        "/ancestor::div[contains(@class,'oxd-input-group')]"
+        "//div[contains(@class,'oxd-select-text')]",
+    )
+
     def open_my_info_page(self):
         self.click(self.MY_INFO_MENU)
 
@@ -1219,3 +1243,53 @@ class MyInfoPage(BasePage):
             lambda _: expected_file_name
             in (self.get_edit_attachment_current_file_name() or "")
         )
+
+    def open_contact_details_tab(self):
+        self.click(self.CONTACT_DETAILS_TAB)
+
+    def wait_until_contact_details_page_is_loaded(self):
+        self.wait_for_visible(self.CONTACT_DETAILS_HEADER)
+        self.wait_for_visible(self.CONTACT_DETAILS_SAVE_BUTTON)
+
+    def is_contact_details_header_displayed(self):
+        return self.is_element_visible(self.CONTACT_DETAILS_HEADER)
+
+    def is_contact_details_section_displayed(self, section_name: str):
+        section_locator = (
+            By.XPATH,
+            f"//*[normalize-space()={self.get_xpath_text_literal(section_name)}]",
+        )
+
+        return self.is_element_visible(section_locator)
+
+    def get_contact_details_input_locator_by_label(self, field_label: str):
+        return (
+            By.XPATH,
+            f"//label[normalize-space()={self.get_xpath_text_literal(field_label)}]"
+            "/ancestor::div[contains(@class,'oxd-input-group')]//input",
+        )
+
+    def is_contact_details_input_displayed(self, field_label: str):
+        return self.is_element_visible(
+            self.get_contact_details_input_locator_by_label(field_label)
+        )
+
+    def highlight_contact_details_input(self, field_label: str):
+        self.highlight_element(
+            self.get_contact_details_input_locator_by_label(field_label)
+        )
+
+    def is_contact_details_country_dropdown_displayed(self):
+        return self.is_element_visible(self.CONTACT_DETAILS_COUNTRY_DROPDOWN)
+
+    def highlight_contact_details_country_dropdown(self):
+        self.highlight_element(self.CONTACT_DETAILS_COUNTRY_DROPDOWN)
+
+    def is_contact_details_save_button_displayed(self):
+        return self.is_element_visible(self.CONTACT_DETAILS_SAVE_BUTTON)
+
+    def highlight_contact_details_save_button(self):
+        self.highlight_element(self.CONTACT_DETAILS_SAVE_BUTTON)
+
+    def highlight_contact_details_header(self):
+        self.highlight_element(self.CONTACT_DETAILS_HEADER)
